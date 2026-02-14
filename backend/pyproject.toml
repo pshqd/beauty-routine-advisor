@@ -1,0 +1,45 @@
+[project]
+name = "skincare-advisor-backend"
+version = "0.1.0"
+description = "RAG-powered skincare consultation API using Flask and ChromaDB"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [
+    { name = "girl team", email = "tsarevapln@gmail.com" }
+]
+
+dependencies = [
+    "flask>=3.0.0",
+    "flask-cors>=4.0.0",
+    "chromadb>=0.4.22",
+    "sentence-transformers>=2.3.1",
+    "requests>=2.31.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.4.0",
+    "black>=23.0.0",
+    "flake8>=6.0.0",
+]
+
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools]
+# Явно указываем, что это НЕ пакеты Python
+py-modules = []
+
+[tool.setuptools.packages.find]
+# Не ищем пакеты автоматически (у нас простые скрипты)
+where = ["."]
+include = []
+
+[tool.black]
+line-length = 100
+target-version = ['py311']
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["test_*.py"]
