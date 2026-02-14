@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SkinCare Advisor - AI консультант по уходу за кожей</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <h1>💆‍♀️ SkinCare Advisor</h1>
+            <p class="subtitle">Персональные советы по уходу за кожей от AI</p>
+        </header>
+
+        <div class="chat-container">
+            <div id="messages" class="messages-area"></div>
+
+            <div class="input-area">
+                <input 
+                    type="text" 
+                    id="user-input" 
+                    placeholder="Опишите ваш тип кожи и проблемы..."
+                    autocomplete="off"
+                >
+                <button id="send-button" onclick="sendMessage()">
+                    ➤ Отправить
+                </button>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>Учебный проект | Flask + LM Studio</p>
+        </footer>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+</body>
+</html>
