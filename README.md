@@ -57,3 +57,10 @@ uv run python app.py
 | Установить зависимости + пакет | python setup.py install | pip install .                   |
 | Dev-режим (editable)           | python setup.py develop | pip install -e .                |
 | Только зависимости             | —                       | pip install -r requirements.txt |
+
+## Тестирование
+
+```bash
+uv sync --extra dev
+uv run pytest -v
+```
