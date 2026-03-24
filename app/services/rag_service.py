@@ -1,53 +1,104 @@
 """
 Сервис для работы с RAG системой (векторный поиск по базе знаний).
-
-TODO (Неделя 2): Полная реализация с ChromaDB
+Использует ChromaDB и SentenceTransformer для семантического поиска.
 """
 
-from typing import List
+import pathlib
+from typing import List, Dict, Optional
+
+import chromadb
+from sentence_transformers import SentenceTransformer
+
 from utils.logger import setup_logger
+from config import Config
 
 logger = setup_logger(__name__)
+
+CHROMA_DIR = Config.EMBEDDINGS_DB_PATH
+COLLECTION_NAME = Config.COLLECTION_KB
+EMBED_MODEL = Config.EMBEDDING_MODEL
 
 
 class RAGService:
     """
     Сервис для семантического поиска по базе знаний.
-    
-    На Неделе 1: Заглушка
-    На Неделе 2: Интеграция ChromaDB + sentence-transformers
+
+    Подключается к ChromaDB, генерирует эмбеддинг запроса и возвращает
+    топ-k релевантных чанков, опционально фильтруя по типу кожи.
     """
-    
+
     def __init__(self):
-        """Инициализация RAG сервиса."""
-        logger.info("⚠️  RAGService: Заглушка (будет реализован на Неделе 2)")
-    
-    def search(self, query: str, top_k: int = 2) -> List[str]:
         """
-        Ищет релевантные секции в базе знаний.
-        
-        TODO (Неделя 2): Реализовать:
-        - Загрузка markdown файлов
-        - Разбиение на чанки
-        - Генерация эмбеддингов
-        - Поиск через ChromaDB
-        
+        Инициализирует ChromaDB клиент и модель эмбеддингов.
+
+        Raises:
+            RuntimeError: Если база знаний не проиндексирована.
+        """
+        if not CHROMA_DIR.exists():
+            raise RuntimeError(
+                f"База знаний не найдена: {CHROMA_DIR}. "
+                "Запустите сначала: python init_kb.py"
+            )
+        self._client = chromadb.PersistentClient(path=str(CHROMA_DIR))
+        self._collection = self._client.get_collection(COLLECTION_NAME)
+        self._model = SentenceTransformer(EMBED_MODEL)
+        logger.info(
+            f"RAGService инициализирован. "
+            f"Чанков в коллекции: {self._collection.count()}"
+        )
+
+    def search(
+        self,
+        query: str,
+        top_k: int = 3,
+        skin_type: Optional[str] = None,
+    ) -> List[Dict]:
+        """
+        Выполняет семантический поиск по базе знаний.
+
         Args:
-            query (str): Запрос пользователя
-            top_k (int): Количество результатов
-        
+            query (str): Запрос пользователя.
+            top_k (int): Количество результатов (по умолчанию 3).
+            skin_type (str, optional): Фильтр по типу кожи.
+                Допустимые значения: 'жирная', 'сухая', 'комбинированная',
+                'нормальная', 'чувствительная', 'all'.
+
         Returns:
-            list: Релевантные тексты из базы знаний
+            list[dict]: Список словарей:
+                - text (str): Текст чанка
+                - source (str): Имя исходного файла
+                - section (str): Заголовок раздела
+                - score (float): Косинусное сходство (0–1)
         """
-        # Заглушка
-        logger.debug(f"RAGService.search вызван с query: {query[:30]}...")
-        return []
-    
-    def index_knowledge_base(self):
-        """
-        Индексирует базу знаний в ChromaDB.
-        
-        TODO (Неделя 2): Реализовать индексацию MD файлов
-        """
-        logger.info("⚠️  index_knowledge_base: Заглушка")
-        pass
+        logger.debug(f"RAG поиск: '{query[:40]}', skin_type={skin_type}")
+        embedding = self._model.encode(query, normalize_embeddings=True).tolist()
+
+        where_filter = None
+        if skin_type and skin_type != "all":
+            where_filter = {
+                "$or": [
+                    {"skin_type": {"$eq": skin_type}},
+                    {"skin_type": {"$eq": "all"}},
+                ]
+            }
+
+        results = self._collection.query(
+            query_embeddings=[embedding],
+            n_results=top_k,
+            where=where_filter,
+            include=["documents", "metadatas", "distances"],
+        )
+
+        chunks = []
+        for i in range(len(results["documents"][0])):
+            score = 1.0 - results["distances"][0][i]
+            meta = results["metadatas"][0][i]
+            chunks.append({
+                "text": results["documents"][0][i],
+                "source": meta.get("source", ""),
+                "section": meta.get("section", ""),
+                "score": round(score, 3),
+            })
+
+        logger.debug(f"Найдено {len(chunks)} чанков")
+        return chunks

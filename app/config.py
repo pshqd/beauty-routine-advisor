@@ -4,7 +4,12 @@
 """
 
 import os
+from pathlib import Path 
+from dotenv import load_dotenv
 
+BASE_DIR = Path(__file__).parent  
+
+load_dotenv()
 
 class Config:
     """Базовая конфигурация приложения."""
@@ -27,12 +32,13 @@ class Config:
         "timeout": 30  # секунды
     }
     
-    # ===== RAG НАСТРОЙКИ (для Недели 2) =====
-    KNOWLEDGE_BASE_PATH = "knowledge_base"
-    EMBEDDINGS_DB_PATH = "embeddings_db"
+    # ===== RAG НАСТРОЙКИ  =====
+    KNOWLEDGE_BASE_PATH = BASE_DIR / "knowledge_base"
+    EMBEDDINGS_DB_PATH = BASE_DIR / "embeddings_db"
     EMBEDDING_MODEL = "all-MiniLM-L6-v2"
     TOP_K_RESULTS = 2  # Количество релевантных секций из RAG
-    
+    COLLECTION_KB = "skincare_kb" 
+
     # ===== ЛОГИРОВАНИЕ =====
     LOG_LEVEL = "INFO"
     LOG_FILE = "app.log"
