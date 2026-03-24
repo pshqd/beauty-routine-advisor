@@ -49,3 +49,18 @@ uv run python init_kb.py
 # Запуск Flask сервера
 uv run python app.py
 ```
+
+## Сборка для практической работы №2
+
+| Цель                           | setup.py (старый)       | pyproject.toml (новый)          |
+| ------------------------------ | ----------------------- | ------------------------------- |
+| Установить зависимости + пакет | python setup.py install | pip install .                   |
+| Dev-режим (editable)           | python setup.py develop | pip install -e .                |
+| Только зависимости             | —                       | pip install -r requirements.txt |
+
+## Тестирование
+
+```bash
+uv sync --extra dev
+uv run pytest -v
+```
