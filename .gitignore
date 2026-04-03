@@ -45,3 +45,11 @@ dist/
 build/
 
 *.sh
+
+docs/sphinx/_static/
+docs/sphinx/_templates/
+
+# Build
+dist/
+build/
+docs/sphinx/_build/
