@@ -15,4 +15,4 @@ RAG Service
 .. automodule:: services.rag_service
    :members:
    :undoc-members:
-   :show-inheritance:to
+   :show-inheritance:
