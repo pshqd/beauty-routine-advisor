@@ -102,3 +102,17 @@ make html
 ```
 
 Открыть: `docs/sphinx/_build/html/index.html`
+
+## Установка dev зависимостей
+
+```bash
+uv sync --extra dev
+```
+
+## Открыть документацию
+
+```bash
+cd ../docs/sphinx
+make html
+open _build/html/index.html
+```
