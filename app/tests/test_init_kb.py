@@ -1,10 +1,12 @@
 from pathlib import Path
 from init_kb import load_md_files, split_into_chunks
 
+
 def test_load_md_files_finds_markdown():
     docs = load_md_files(Path("knowledge_base"))
     assert isinstance(docs, list)
     assert len(docs) > 0
+
 
 def test_split_into_chunks_returns_chunks():
     docs = load_md_files(Path("knowledge_base"))

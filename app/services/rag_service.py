@@ -52,12 +52,14 @@ class RAGService:
                 st = meta.get("skin_type", "all")
                 if st not in (skin_type, "all", ""):
                     continue
-            chunks.append({
-                "text": doc.page_content,
-                "source": meta.get("source", ""),
-                "section": meta.get("h2") or meta.get("h1", ""),
-                "score": round(1.0 - float(dist), 3),
-            })
+            chunks.append(
+                {
+                    "text": doc.page_content,
+                    "source": meta.get("source", ""),
+                    "section": meta.get("h2") or meta.get("h1", ""),
+                    "score": round(1.0 - float(dist), 3),
+                }
+            )
             if len(chunks) == k:
                 break
 

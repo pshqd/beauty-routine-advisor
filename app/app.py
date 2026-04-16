@@ -104,26 +104,49 @@ def chat():
 
     except Exception as e:
         logger.error(f"Ошибка в /api/chat: {str(e)}")
-        
-        if "402" in str(e):
-            return jsonify({
-                "response": "💳 Закончились кредиты. Попробуйте позже.",
-                "sources": []
-            }), 200
-        
-        if "404" in str(e):
-            return jsonify({
-                "response": "⚙️ Модель недоступна. Администратор меняет конфигурацию.",
-                "sources": []
-            }), 200
-        
-        if "429" in str(e):
-            return jsonify({
-                "response": "⏳ Сервер перегружен. Попробуйте через 15 секунд.",
-                "sources": []
-            }), 200
 
-        return jsonify({"error": "Internal server error", "details": str(e) if app.debug else None}), 500
+        if "402" in str(e):
+            return (
+                jsonify(
+                    {
+                        "response": "💳 Закончились кредиты. Попробуйте позже.",
+                        "sources": [],
+                    }
+                ),
+                200,
+            )
+
+        if "404" in str(e):
+            return (
+                jsonify(
+                    {
+                        "response": "⚙️ Модель недоступна. Администратор меняет конфигурацию.",
+                        "sources": [],
+                    }
+                ),
+                200,
+            )
+
+        if "429" in str(e) or "403" in str(e):
+            return (
+                jsonify(
+                    {
+                        "response": "⏳ Сервер перегружен. Попробуйте через 15 секунд.",
+                        "sources": [],
+                    }
+                ),
+                200,
+            )
+
+        return (
+            jsonify(
+                {
+                    "error": "Internal server error",
+                    "details": str(e) if app.debug else None,
+                }
+            ),
+            500,
+        )
 
 
 # ===== ERROR HANDLERS =====
