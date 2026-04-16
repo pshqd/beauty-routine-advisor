@@ -18,14 +18,17 @@ def get_provider() -> BaseLLMProvider:
 
     if provider == "lm_studio":
         from services.providers.lm_studio import LMStudioProvider
+
         return LMStudioProvider()
 
     if provider == "gigachat":
         from services.providers.gigachat import GigaChatProvider
+
         return GigaChatProvider()
 
     if provider == "openrouter":
         from services.providers.openrouter import OpenRouterProvider
+
         return OpenRouterProvider()
 
     raise ValueError(

@@ -16,23 +16,39 @@ from utils.logger import setup_logger
 logger = setup_logger(__name__)
 
 SKIN_TYPE_PATTERNS = [
-    r"жирн", r"сух", r"комбинир",
-    r"норм(альн)?", r"чувствительн", r"проблемн",
+    r"жирн",
+    r"сух",
+    r"комбинир",
+    r"норм(альн)?",
+    r"чувствительн",
+    r"проблемн",
 ]
 
 SKIN_TYPE_MAP = {
-    r"жирн":         "жирная",
-    r"сух":          "сухая",
-    r"комбинир":     "комбинированная",
-    r"норм(альн)?":  "нормальная",
+    r"жирн": "жирная",
+    r"сух": "сухая",
+    r"комбинир": "комбинированная",
+    r"норм(альн)?": "нормальная",
     r"чувствительн": "чувствительная",
-    r"проблемн":     "проблемная",
+    r"проблемн": "проблемная",
 }
 
 SKIN_TOPIC_PATTERNS = [
-    r"кож", r"уход", r"крем", r"сывороток", r"тонер",
-    r"маск", r"очищ", r"увлажн", r"спф", r"spf",
-    r"акне", r"прыщ", r"пигментац", r"ретинол", r"рутин",
+    r"кож",
+    r"уход",
+    r"крем",
+    r"сывороток",
+    r"тонер",
+    r"маск",
+    r"очищ",
+    r"увлажн",
+    r"спф",
+    r"spf",
+    r"акне",
+    r"прыщ",
+    r"пигментац",
+    r"ретинол",
+    r"рутин",
 ]
 
 
@@ -47,7 +63,7 @@ class LLMService:
     def __init__(self):
         self._rag: RAGService = RAGService()
         self._provider: BaseLLMProvider = get_provider()
-        logger.info(f"✅ LLMService: провайдер={Config.LLM_PROVIDER}")
+        logger.info(f"LLMService: провайдер={Config.LLM_PROVIDER}")
 
     def generate_response(
         self,
@@ -56,12 +72,16 @@ class LLMService:
     ) -> Dict[str, Any]:
         history = conversation_history or []
 
-        if self._is_skin_topic(user_message) and self._needs_clarification(history, user_message):
+        if self._is_skin_topic(user_message) and self._needs_clarification(
+            history, user_message
+        ):
             system_prompt = self._create_clarification_prompt()
             sources = []
         else:
             skin_type = self._extract_skin_type(history, user_message)
-            chunks = self._rag.search(user_message, top_k=Config.TOP_K_RESULTS, skin_type=skin_type)
+            chunks = self._rag.search(
+                user_message, top_k=Config.TOP_K_RESULTS, skin_type=skin_type
+            )
             system_prompt = self._create_system_prompt(self._format_context(chunks))
             sources = self._format_sources(chunks)
 
@@ -74,12 +94,10 @@ class LLMService:
         logger.info(f"✅ Ответ: {response_text[:60]}...")
 
         return {
-            "response":  response_text,
-            "sources":   sources,
+            "response": response_text,
+            "sources": sources,
             "timestamp": datetime.now().isoformat(),
         }
-
-    # ── приватные методы (без изменений) ──────────────────────────────
 
     def _is_skin_topic(self, text: str) -> bool:
         return any(re.search(p, text.lower()) for p in SKIN_TOPIC_PATTERNS)
@@ -89,7 +107,9 @@ class LLMService:
         return not any(re.search(p, all_text.lower()) for p in SKIN_TYPE_PATTERNS)
 
     def _extract_skin_type(self, history, user_message) -> Optional[str]:
-        all_text = (" ".join(m["content"] for m in history) + " " + user_message).lower()
+        all_text = (
+            " ".join(m["content"] for m in history) + " " + user_message
+        ).lower()
         for pattern, label in SKIN_TYPE_MAP.items():
             if re.search(pattern, all_text):
                 return label
@@ -121,8 +141,10 @@ class LLMService:
     def _create_clarification_prompt(self) -> str:
         return (
             "Ты — дружелюбный эксперт по уходу за кожей.\n\n"
-            "Пользователь не указал тип кожи. Задай один короткий уточняющий вопрос.\n"
-            "Типы кожи: жирная, сухая, комбинированная, нормальная, чувствительная.\n\n"
+            "Пользователь не указал что-то, что тебе важно чтобы подобрать совет." 
+            "Задай один короткий уточняющий вопрос.\n"
+            "Типы кожи: например, какого типа кожа?"
+            "жирная, сухая, комбинированная, нормальная, чувствительная.\n\n"
             "Один вопрос, без советов!"
         )
 
@@ -140,5 +162,6 @@ class LLMService:
             f"БАЗА ЗНАНИЙ:\n{context}\n\n"
             "Базируй ответ на этой информации!"
             "Не используй HTML. Используй списки и подзаголовки."
-            "Не отвечай на вопросы, не связанные напрямую со здоровьем, красотой и моральным состоянием. Говори, что не знаешь такой информации"
+            "Не отвечай на вопросы, не связанные напрямую со здоровьем, красотой и моральным состоянием."
+            " Говори, что не знаешь такой информации"
         )
