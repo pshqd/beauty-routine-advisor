@@ -1,104 +1,65 @@
-"""
-Сервис для работы с RAG системой (векторный поиск по базе знаний).
-Использует ChromaDB и SentenceTransformer для семантического поиска.
-"""
+# app/services/rag_service.py
+"""RAG: FAISS-поиск с LangChain retriever."""
 
-import pathlib
 from typing import List, Dict, Optional
-
-import chromadb
-from sentence_transformers import SentenceTransformer
-
-from utils.logger import setup_logger
+from langchain_community.vectorstores import FAISS
+from langchain_huggingface import HuggingFaceEmbeddings
 from config import Config
+from utils.logger import setup_logger
 
 logger = setup_logger(__name__)
 
-CHROMA_DIR = Config.EMBEDDINGS_DB_PATH
-COLLECTION_NAME = Config.COLLECTION_KB
-EMBED_MODEL = Config.EMBEDDING_MODEL
-
 
 class RAGService:
-    """
-    Сервис для семантического поиска по базе знаний.
-
-    Подключается к ChromaDB, генерирует эмбеддинг запроса и возвращает
-    топ-k релевантных чанков, опционально фильтруя по типу кожи.
-    """
+    """Семантический поиск по базе знаний через FAISS."""
 
     def __init__(self):
-        """
-        Инициализирует ChromaDB клиент и модель эмбеддингов.
-
-        Raises:
-            RuntimeError: Если база знаний не проиндексирована.
-        """
-        if not CHROMA_DIR.exists():
+        if not Config.FAISS_INDEX_PATH.exists():
             raise RuntimeError(
-                f"База знаний не найдена: {CHROMA_DIR}. "
-                "Запустите сначала: python init_kb.py"
+                f"Индекс не найден: {Config.FAISS_INDEX_PATH}. "
+                "Запустите: python init_kb.py"
             )
-        self._client = chromadb.PersistentClient(path=str(CHROMA_DIR))
-        self._collection = self._client.get_collection(COLLECTION_NAME)
-        self._model = SentenceTransformer(EMBED_MODEL)
-        logger.info(
-            f"RAGService инициализирован. "
-            f"Чанков в коллекции: {self._collection.count()}"
+        self._embeddings = HuggingFaceEmbeddings(
+            model_name=Config.EMBEDDING_MODEL,
+            model_kwargs={"device": "cpu"},
+            encode_kwargs={"normalize_embeddings": True},
         )
+        self._vs = FAISS.load_local(
+            str(Config.FAISS_INDEX_PATH),
+            self._embeddings,
+            allow_dangerous_deserialization=True,
+        )
+        logger.info(f"✅ RAGService: {self._vs.index.ntotal} векторов")
 
     def search(
-        self,
-        query: str,
-        top_k: int = 3,
-        skin_type: Optional[str] = None,
+        self, query: str, top_k: int = None, skin_type: Optional[str] = None
     ) -> List[Dict]:
         """
-        Выполняет семантический поиск по базе знаний.
-
-        Args:
-            query (str): Запрос пользователя.
-            top_k (int): Количество результатов (по умолчанию 3).
-            skin_type (str, optional): Фильтр по типу кожи.
-                Допустимые значения: 'жирная', 'сухая', 'комбинированная',
-                'нормальная', 'чувствительная', 'all'.
+        Семантический поиск, опциональная пост-фильтрация по skin_type.
 
         Returns:
-            list[dict]: Список словарей:
-                - text (str): Текст чанка
-                - source (str): Имя исходного файла
-                - section (str): Заголовок раздела
-                - score (float): Косинусное сходство (0–1)
+            list[dict]: text, source, section, score
         """
-        logger.debug(f"RAG поиск: '{query[:40]}', skin_type={skin_type}")
-        embedding = self._model.encode(query, normalize_embeddings=True).tolist()
-
-        where_filter = None
-        if skin_type and skin_type != "all":
-            where_filter = {
-                "$or": [
-                    {"skin_type": {"$eq": skin_type}},
-                    {"skin_type": {"$eq": "all"}},
-                ]
-            }
-
-        results = self._collection.query(
-            query_embeddings=[embedding],
-            n_results=top_k,
-            where=where_filter,
-            include=["documents", "metadatas", "distances"],
-        )
+        k = top_k or Config.RETRIEVAL_K
+        # Берём больше, чтобы после фильтрации осталось достаточно
+        fetch_k = k * 3 if skin_type else k
+        results = self._vs.similarity_search_with_score(query, k=fetch_k)
 
         chunks = []
-        for i in range(len(results["documents"][0])):
-            score = 1.0 - results["distances"][0][i]
-            meta = results["metadatas"][0][i]
+        for doc, dist in results:
+            meta = doc.metadata
+            if skin_type and skin_type != "all":
+                st = meta.get("skin_type", "all")
+                if st not in (skin_type, "all", ""):
+                    continue
             chunks.append({
-                "text": results["documents"][0][i],
+                "text": doc.page_content,
                 "source": meta.get("source", ""),
-                "section": meta.get("section", ""),
-                "score": round(score, 3),
+                "section": meta.get("h2") or meta.get("h1", ""),
+                "score": round(1.0 - float(dist), 3),
             })
+            if len(chunks) == k:
+                break
 
-        logger.debug(f"Найдено {len(chunks)} чанков")
+        logger.debug(f"RAG: {len(chunks)} чанков для '{query[:40]}'")
         return chunks
