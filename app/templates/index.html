@@ -1,10 +1,65 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>SkinCare Advisor - AI консультант по уходу за кожей</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+    <link
+        rel="stylesheet"
+        href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown.min.css"
+        crossorigin="anonymous"
+        referrerpolicy="no-referrer"
+    />
+
+    <style>
+        .message-content.markdown-body {
+            background: transparent;
+            color: inherit;
+            padding: 0;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+
+        .message-content.markdown-body > *:first-child {
+            margin-top: 0;
+        }
+
+        .message-content.markdown-body > *:last-child {
+            margin-bottom: 0;
+        }
+
+        .message-content.markdown-body p,
+        .message-content.markdown-body ul,
+        .message-content.markdown-body ol,
+        .message-content.markdown-body pre,
+        .message-content.markdown-body blockquote {
+            margin-bottom: 0.75em;
+        }
+
+        .message-content.markdown-body h1,
+        .message-content.markdown-body h2,
+        .message-content.markdown-body h3,
+        .message-content.markdown-body h4 {
+            margin-top: 1em;
+            margin-bottom: 0.5em;
+        }
+
+        .message-content.markdown-body pre {
+            overflow-x: auto;
+            border-radius: 12px;
+            padding: 12px;
+        }
+
+        .message-content.markdown-body code {
+            word-break: break-word;
+        }
+
+        .message-content.markdown-body a {
+            color: inherit;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
@@ -17,12 +72,12 @@
             <div id="messages" class="messages-area"></div>
 
             <div class="input-area">
-                <input 
-                    type="text" 
-                    id="user-input" 
+                <input
+                    type="text"
+                    id="user-input"
                     placeholder="Опишите ваш тип кожи и проблемы..."
                     autocomplete="off"
-                >
+                />
                 <button id="send-button" onclick="sendMessage()">
                     ➤ Отправить
                 </button>
@@ -30,9 +85,26 @@
         </div>
 
         <footer class="footer">
-            <p>Учебный проект | Flask + LM Studio</p>
+            <p>Beauty routine advisor</p>
         </footer>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+
+    <script>
+        marked.setOptions({
+            breaks: true,
+            gfm: true
+        });
+
+        window.renderMarkdown = function (markdownText) {
+            const rawHtml = marked.parse(markdownText || "");
+            return DOMPurify.sanitize(rawHtml, {
+                USE_PROFILES: { html: true }
+            });
+        };
+    </script>
 
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
 </body>
