@@ -13,8 +13,8 @@ logger = setup_logger(__name__)
 
 # Маппинг ролей OpenAI → LangChain message-классы
 _ROLE_MAP = {
-    "system":    SystemMessage,
-    "user":      HumanMessage,
+    "system": SystemMessage,
+    "user": HumanMessage,
     "assistant": AIMessage,
 }
 
