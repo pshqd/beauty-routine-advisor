@@ -1,0 +1,35 @@
+services:
+  skincare-advisor:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      platforms:
+        - linux/amd64        # принудительно amd64
+    image: beauty-routine-advisor:latest
+    container_name: beauty-routine-advisor
+    restart: unless-stopped
+    ports:
+      - "8800:5000"
+    env_file:
+      - app/.env
+    environment:
+      HOST: "0.0.0.0"
+      PORT: "8800"
+      DEBUG: "false"
+      HF_HOME: /home/appuser/.cache/huggingface
+    volumes:
+      - faiss_index:/app/.faiss_index
+      - artifacts:/app/artifacts
+      - hf_cache:/home/appuser/.cache/huggingface
+    healthcheck:
+      test: ["CMD", "python", "-c",
+             "import urllib.request; urllib.request.urlopen('http://localhost:8800/api/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 120s
+
+volumes:
+  faiss_index:
+  artifacts:
+  hf_cache:
