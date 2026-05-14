@@ -82,6 +82,8 @@ def chat():
         JSON: Ответ от AI-агента
     """
     try:
+        if not request.is_json:
+            return jsonify({"error": "Content-Type must be application/json"}), 400
         # Валидация
         data = request.get_json()
         if not data or "message" not in data:
