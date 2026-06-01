@@ -72,8 +72,8 @@ function addMessage(text, role, sources = []) {
 
     // Пузырь с текстом
     const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${role}`;
-    messageDiv.textContent = text;
+    messageDiv.className = `message ${role}${role === 'assistant' ? ' message-content markdown-body' : ''}`;
+    messageDiv.innerHTML = window.renderMarkdown(text);
     wrapper.appendChild(messageDiv);
 
     // Источники — только для assistant и только если есть
@@ -121,7 +121,7 @@ function renderSources(sources) {
         if (src.preview) {
             const preview = document.createElement('p');
             preview.className = 'source-preview';
-            preview.textContent = src.preview;
+            preview.innerHTML = window.renderMarkdown(src.preview);
             body.appendChild(preview);
         }
 

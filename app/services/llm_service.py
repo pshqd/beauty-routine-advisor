@@ -128,7 +128,7 @@ class LLMService:
 
             title = section if section else source
             preview_text = chunk.get("text", "")
-            preview = (preview_text[:200] + "...") if len(preview_text) > 200 else preview_text
+            preview = (preview_text[:500] + "...") if len(preview_text) > 500 else preview_text
 
             sources.append({
                 "title": title,
