@@ -53,3 +53,6 @@ docs/sphinx/_templates/
 dist/
 build/
 docs/sphinx/_build/
+
+embeddings_db/
+app/embeddings_db/

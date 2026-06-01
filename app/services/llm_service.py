@@ -163,3 +163,17 @@ class LLMService:
             "Внимательно обдумывай тематику вопроса\n"
             ""
         )
+    
+    def _format_sources(self, chunks):
+        seen, sources = set(), []
+        for chunk in chunks:
+            key = (chunk.get("source",""), chunk.get("section",""))
+            if key not in seen:
+                seen.add(key)
+                sources.append({
+                    "title": chunk.get("section") or chunk.get("source",""),
+                    "file": chunk.get("source",""),
+                    "preview": chunk.get("text","")[:200] + "...",
+                    "score": chunk.get("score", 0)
+                })
+        return sources

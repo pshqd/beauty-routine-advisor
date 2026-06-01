@@ -56,7 +56,10 @@ if __name__ == "__main__":
     embeddings = HuggingFaceEmbeddings(
         model_name=Config.EMBEDDING_MODEL,
         model_kwargs={"device": "cpu"},
-        encode_kwargs={"normalize_embeddings": True},
+        encode_kwargs={
+        "normalize_embeddings": True,
+        "task": "search_document" 
+    }
     )
     chunks = build_chunks()
     print(f"📦 Чанков: {len(chunks)}")

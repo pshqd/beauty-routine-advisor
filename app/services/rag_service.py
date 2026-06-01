@@ -22,7 +22,10 @@ class RAGService:
         self._embeddings = HuggingFaceEmbeddings(
             model_name=Config.EMBEDDING_MODEL,
             model_kwargs={"device": "cpu"},
-            encode_kwargs={"normalize_embeddings": True},
+            encode_kwargs={
+                "normalize_embeddings": True,
+                "task": "search_document"
+            }
         )
         self._vs = FAISS.load_local(
             str(Config.FAISS_INDEX_PATH),

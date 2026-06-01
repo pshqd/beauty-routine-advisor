@@ -6,7 +6,7 @@ const sendButton = document.getElementById('send-button');
 
 document.addEventListener('DOMContentLoaded', () => {
     addMessage(
-        'Привет! 👋 Я AI-консультант по уходу за кожей. Расскажите о ваших проблемах или типе кожи.',
+        'Привет!Я AI-консультант по уходу за кожей. Расскажите о ваших проблемах или типе кожи.',
         'assistant'
     );
 
@@ -59,7 +59,7 @@ async function sendMessage() {
     } catch (error) {
         console.error('Error:', error);
         addMessage(
-            '❌ Ошибка соединения. Проверьте, что backend запущен.',
+            '❌ Ошибка соединения.Что то не работает(()).',
             'system'
         );
     } finally {

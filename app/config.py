@@ -29,7 +29,7 @@ class Config:
     )  # lm_studio | gigachat | openrouter
 
     GIGACHAT_CREDENTIALS = os.getenv("GIGACHAT_CREDENTIALS", "")
-    GIGACHAT_SCOPE = os.getenv("GIGACHAT_SCOPE", "GIGACHAT_API_PERS")  # или _CORP
+    GIGACHAT_SCOPE = os.getenv("GIGACHAT_SCOPE", "GIGACHAT_API_PERS")
     GIGACHAT_MODEL = os.getenv("GIGACHAT_MODEL", "GigaChat 2")
 
     OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY", "")
@@ -46,8 +46,8 @@ class Config:
     # ===== RAG НАСТРОЙКИ  =====
     KNOWLEDGE_BASE_PATH = BASE_DIR / "knowledge_base"
     EMBEDDINGS_DB_PATH = BASE_DIR / "embeddings_db"
-    EMBEDDING_MODEL = "deepvk/USER-base"
-    TOP_K_RESULTS = 2  # Количество релевантных секций из RAG
+    EMBEDDING_MODEL = "ai-forever/FRIDA"
+    TOP_K_RESULTS = 3  # Количество релевантных секций из RAG
     COLLECTION_KB = "skincare_kb"
     FAISS_INDEX_PATH = BASE_DIR / "embeddings_db"
     # ===== ЛОГИРОВАНИЕ =====
