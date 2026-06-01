@@ -1,9 +1,3 @@
-"""
-Сервис для работы с LLM (LM Studio).
-
-TODO (Неделя 2): Интеграция с RAG системой
-"""
-
 import requests
 from datetime import datetime
 from typing import Dict, List, Any
@@ -17,90 +11,140 @@ logger = setup_logger(__name__)
 class LLMService:
     """
     Сервис для генерации ответов через LM Studio.
-    
+
     На Неделе 1: Базовая интеграция без RAG
     На Неделе 2: Добавится интеграция с RAGService
     """
-    
+
     def __init__(self):
         """Инициализация сервиса."""
         self.url = Config.LM_STUDIO_URL
         self.model = Config.LM_STUDIO_MODEL
         self.generation_config = Config.GENERATION_CONFIG
-        
-        logger.info(f"✅ LLMService инициализирован: {self.url}")
-    
+
+        logger.info(f"LLMService инициализирован: {self.url}")
+
     def generate_response(
-        self, 
-        user_message: str, 
+        self,
+        user_message: str,
         conversation_history: List[Dict[str, str]] = None
     ) -> Dict[str, Any]:
         """
         Генерирует ответ от LLM на основе сообщения пользователя.
-        
+
         Args:
             user_message (str): Сообщение пользователя
             conversation_history (list): История диалога
-        
+
         Returns:
             dict: {
                 "response": str,
-                "sources": list,
+                "sources": list[dict],
                 "timestamp": str
             }
-        
+
         Raises:
             ConnectionError: Если LM Studio недоступен
             TimeoutError: Если превышен таймаут
         """
         try:
-            # TODO (Неделя 2): Получить контекст из RAG
-            context = self._get_context_stub()
-            
+            # TODO (Неделя 2): Заменить на RAGService.search(user_message)
+            raw_chunks = self._get_context_stub(user_message)
+
+            # Форматируем источники в структурированные объекты
+            sources = self._format_sources(raw_chunks)
+
+            # Собираем текстовый контекст для промпта
+            context = "\n\n".join(c["text"] for c in raw_chunks) if raw_chunks else ""
+
             # Формируем промпт
             system_prompt = self._create_system_prompt(context)
-            
+
             # Подготовка сообщений
             messages = [{"role": "system", "content": system_prompt}]
-            
+
             if conversation_history:
                 messages.extend(conversation_history)
-            
+
             messages.append({"role": "user", "content": user_message})
-            
+
             # Запрос в LM Studio
             logger.info("🤖 Отправка запроса в LM Studio...")
             llm_response = self._call_lm_studio(messages)
-            
+
             logger.info(f"✅ Получен ответ: {llm_response[:50]}...")
-            
+
             return {
                 "response": llm_response,
-                "sources": [context[:200]] if context else [],
+                "sources": sources,
                 "timestamp": datetime.now().isoformat()
             }
-            
+
         except requests.exceptions.ConnectionError:
             logger.error("❌ LM Studio недоступен")
             raise ConnectionError(
                 "LM Studio is not running. Start Local Server on port 1234."
             )
-        
+
         except requests.exceptions.Timeout:
             logger.error("⏱️ Таймаут запроса к LM Studio")
             raise TimeoutError("Request to LM Studio timed out.")
-        
+
         except Exception as e:
             logger.error(f"💥 Ошибка в LLMService: {str(e)}")
             raise
-    
+
+    def _format_sources(self, chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        Преобразует сырые чанки из RAG в структурированные объекты источников.
+        Дедуплицирует по (source, section).
+
+        Args:
+            chunks (list): Список чанков вида {text, source, section, score}
+
+        Returns:
+            list[dict]: [
+                {
+                    "title": str,   — заголовок секции или имя файла
+                    "file": str,    — относительный путь к файлу в БЗ
+                    "preview": str, — первые ~200 символов текста чанка
+                    "score": float  — релевантность 0..1
+                },
+                ...
+            ]
+        """
+        seen = set()
+        sources = []
+
+        for chunk in chunks:
+            source = chunk.get("source", "")
+            section = chunk.get("section", "")
+            key = (source, section)
+
+            if key in seen:
+                continue
+            seen.add(key)
+
+            title = section if section else source
+            preview_text = chunk.get("text", "")
+            preview = (preview_text[:200] + "...") if len(preview_text) > 200 else preview_text
+
+            sources.append({
+                "title": title,
+                "file": source,
+                "preview": preview,
+                "score": round(chunk.get("score", 0.0), 2)
+            })
+
+        return sources
+
     def _call_lm_studio(self, messages: List[Dict[str, str]]) -> str:
         """
         Отправляет запрос в LM Studio API.
-        
+
         Args:
             messages (list): Список сообщений
-        
+
         Returns:
             str: Ответ от LLM
         """
@@ -112,46 +156,54 @@ class LLMService:
             "top_p": self.generation_config["top_p"],
             "stream": False
         }
-        
+
         response = requests.post(
             self.url,
             json=payload,
             timeout=self.generation_config["timeout"]
         )
-        
+
         response.raise_for_status()
         data = response.json()
-        
+
         return data['choices'][0]['message']['content']
-    
-    def _get_context_stub(self) -> str:
+
+    def _get_context_stub(self, query: str = "") -> List[Dict[str, Any]]:
         """
-        Временная заглушка для контекста из базы знаний.
-        
-        TODO (Неделя 2): Заменить на RAGService.search()
-        
+        Временная заглушка: возвращает чанки в формате, совместимом
+        с будущим RAGService.search().
+
+        TODO (Неделя 2): Заменить на RAGService.search(query)
+
+        Args:
+            query (str): Запрос пользователя (пока не используется)
+
         Returns:
-            str: Базовый контекст
+            list[dict]: Список чанков с полями text/source/section/score
         """
-        return """
-        БАЗОВАЯ ИНФОРМАЦИЯ ПО УХОДУ ЗА КОЖЕЙ:
-        
-        Основные правила:
-        1. Очищение 2 раза в день
-        2. Увлажнение обязательно
-        3. SPF защита каждый день
-        4. Подбор средств по типу кожи
-        
-        Типы кожи: жирная, сухая, комбинированная, нормальная
-        """
-    
+        return [
+            {
+                "text": (
+                    "Основные правила ухода за кожей:\n"
+                    "1. Очищение 2 раза в день\n"
+                    "2. Увлажнение обязательно\n"
+                    "3. SPF защита каждый день\n"
+                    "4. Подбор средств по типу кожи\n"
+                    "Типы кожи: жирная, сухая, комбинированная, нормальная"
+                ),
+                "source": "skincare_kb/06_procedures_and_techniques/01_daily_skincare_rituals.md",
+                "section": "Базовые правила ухода",
+                "score": 0.91
+            }
+        ]
+
     def _create_system_prompt(self, context: str) -> str:
         """
         Создает системный промпт для LLM.
-        
+
         Args:
             context (str): Контекст из базы знаний
-        
+
         Returns:
             str: Системный промпт
         """

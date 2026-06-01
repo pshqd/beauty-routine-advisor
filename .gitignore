@@ -43,3 +43,16 @@ htmlcov/
 # Build
 dist/
 build/
+
+*.sh
+
+docs/sphinx/_static/
+docs/sphinx/_templates/
+
+# Build
+dist/
+build/
+docs/sphinx/_build/
+
+embeddings_db/
+app/embeddings_db/
