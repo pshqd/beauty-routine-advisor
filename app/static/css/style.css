@@ -88,6 +88,114 @@ body {
     font-size: 14px;
     padding: 8px 15px;
 }
+/* ===== MESSAGE WRAPPER ===== */
+
+.message-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.message-wrapper.user      { align-items: flex-end; }
+.message-wrapper.assistant { align-items: flex-start; }
+.message-wrapper.system    { align-items: center; }
+
+/* ===== SOURCES BLOCK ===== */
+
+.sources-block {
+    max-width: 70%;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    animation: fadeIn 0.35s ease;
+}
+
+.sources-label {
+    font-size: 12px;
+    color: #888;
+    margin-bottom: 2px;
+    padding-left: 4px;
+}
+
+/* ===== SOURCE CARD (<details>) ===== */
+
+.source-card {
+    background: #f8f7ff;
+    border: 1px solid #e2e0f5;
+    border-radius: 10px;
+    overflow: hidden;
+    transition: border-color 0.2s ease;
+}
+
+.source-card:hover        { border-color: #b0aaee; }
+.source-card[open]        { border-color: #9590e8; }
+
+.source-summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 12px;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+    font-size: 13px;
+    color: #444;
+    transition: background 0.15s ease;
+}
+
+.source-summary::-webkit-details-marker { display: none; }
+.source-summary:hover                    { background: #eeecfb; }
+
+.source-card[open] .source-summary {
+    background: #e9e6f9;
+    border-bottom: 1px solid #d8d4f4;
+}
+
+.source-icon  { font-size: 14px; flex-shrink: 0; }
+
+.source-title {
+    flex: 1;
+    font-weight: 500;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.source-score {
+    font-size: 11px;
+    color: #fff;
+    background: #7c72e0;
+    border-radius: 10px;
+    padding: 1px 7px;
+    flex-shrink: 0;
+    font-weight: 600;
+}
+
+.source-body {
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    animation: expandDown 0.2s ease;
+}
+
+@keyframes expandDown {
+    from { opacity: 0; transform: translateY(-4px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.source-preview {
+    font-size: 13px;
+    color: #555;
+    line-height: 1.55;
+}
+
+.source-file {
+    font-size: 11px;
+    color: #9590e8;
+    font-family: 'Menlo', 'Consolas', monospace;
+    word-break: break-all;
+}
 
 .input-area {
     display: flex;
@@ -202,4 +310,5 @@ body {
     .message {
         max-width: 85%;
     }
+    .sources-block { max-width: 88%; }
 }

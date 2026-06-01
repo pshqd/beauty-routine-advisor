@@ -3,10 +3,9 @@ const messagesContainer = document.getElementById('messages');
 const userInput = document.getElementById('user-input');
 const sendButton = document.getElementById('send-button');
 
-
 document.addEventListener('DOMContentLoaded', () => {
     addMessage(
-        'Привет!Я AI-консультант по уходу за кожей. Расскажите о ваших проблемах или типе кожи.',
+        'Привет! 👋 Я AI-консультант по уходу за кожей. Расскажите о ваших проблемах или типе кожи.',
         'assistant'
     );
 
@@ -17,7 +16,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 });
-
 
 async function sendMessage() {
     const message = userInput.value.trim();
@@ -43,13 +41,8 @@ async function sendMessage() {
 
         const data = await response.json();
 
-        // Ответ ассистента — через Markdown
-        addMessage(data.response, 'assistant');
-
-        // Источники RAG — если есть
-        if (data.sources && data.sources.length > 0) {
-            addSources(data.sources);
-        }
+        // Рендерим ответ вместе с источниками
+        addMessage(data.response, 'assistant', data.sources || []);
 
         conversationHistory.push(
             { role: 'user', content: message },
@@ -59,7 +52,7 @@ async function sendMessage() {
     } catch (error) {
         console.error('Error:', error);
         addMessage(
-            '❌ Ошибка соединения.Что то не работает(()).',
+            '❌ Ошибка. Проверьте, что backend и LM Studio запущены.',
             'system'
         );
     } finally {
@@ -67,61 +60,93 @@ async function sendMessage() {
     }
 }
 
-
 /**
  * Добавляет сообщение в чат.
- *
- * - role === 'assistant' → рендерит Markdown через window.renderMarkdown
- * - role === 'user'      → вставляет как plain text (безопасно)
- * - role === 'system'    → plain text, стиль ошибки
+ * @param {string} text    - Текст сообщения
+ * @param {string} role    - 'user' | 'assistant' | 'system'
+ * @param {Array}  sources - Массив объектов источников (только для assistant)
  */
-function addMessage(text, role) {
+function addMessage(text, role, sources = []) {
+    const wrapper = document.createElement('div');
+    wrapper.className = `message-wrapper ${role}`;
+
+    // Пузырь с текстом
     const messageDiv = document.createElement('div');
-    messageDiv.className = `message message-${role}`;
+    messageDiv.className = `message ${role}`;
+    messageDiv.textContent = text;
+    wrapper.appendChild(messageDiv);
 
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'message-content';
-
-    if (role === 'assistant') {
-        // Markdown → HTML → DOMPurify → innerHTML
-        contentDiv.className += ' markdown-body';
-        contentDiv.innerHTML = window.renderMarkdown(text);
-    } else {
-        // user и system — plain text, XSS невозможен
-        contentDiv.textContent = text;
+    // Источники — только для assistant и только если есть
+    if (role === 'assistant' && sources.length > 0) {
+        wrapper.appendChild(renderSources(sources));
     }
 
-    messageDiv.appendChild(contentDiv);
-    messagesContainer.appendChild(messageDiv);
+    messagesContainer.appendChild(wrapper);
     messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
-
 
 /**
- * Отображает блок источников RAG под ответом ассистента.
- * sources — массив строк вида "файл > раздел"
+ * Строит блок источников в виде раскрывающихся карточек-статей.
+ * @param {Array} sources
+ * @returns {HTMLElement}
  */
-function addSources(sources) {
-    const sourcesDiv = document.createElement('div');
-    sourcesDiv.className = 'message-sources';
+function renderSources(sources) {
+    const block = document.createElement('div');
+    block.className = 'sources-block';
 
-    const title = document.createElement('p');
-    title.className = 'sources-title';
-    title.textContent = '📚 Источники:';
+    const label = document.createElement('p');
+    label.className = 'sources-label';
+    label.textContent = '📚 Источники из базы знаний';
+    block.appendChild(label);
 
-    const list = document.createElement('ul');
     sources.forEach(src => {
-        const item = document.createElement('li');
-        item.textContent = src;
-        list.appendChild(item);
+        const card = document.createElement('details');
+        card.className = 'source-card';
+
+        const summary = document.createElement('summary');
+        summary.className = 'source-summary';
+        summary.innerHTML = `
+            <span class="source-icon">📄</span>
+            <span class="source-title">${escapeHtml(src.title)}</span>
+            ${src.score > 0
+                ? `<span class="source-score">${Math.round(src.score * 100)}%</span>`
+                : ''
+            }
+        `;
+        card.appendChild(summary);
+
+        const body = document.createElement('div');
+        body.className = 'source-body';
+
+        if (src.preview) {
+            const preview = document.createElement('p');
+            preview.className = 'source-preview';
+            preview.textContent = src.preview;
+            body.appendChild(preview);
+        }
+
+        if (src.file) {
+            const file = document.createElement('span');
+            file.className = 'source-file';
+            file.textContent = src.file;
+            body.appendChild(file);
+        }
+
+        card.appendChild(body);
+        block.appendChild(card);
     });
 
-    sourcesDiv.appendChild(title);
-    sourcesDiv.appendChild(list);
-    messagesContainer.appendChild(sourcesDiv);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    return block;
 }
 
+/** Экранирует HTML-спецсимволы в тексте. */
+function escapeHtml(str) {
+    return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+}
 
 function setLoading(isLoading) {
     sendButton.disabled = isLoading;
@@ -133,9 +158,7 @@ function setLoading(isLoading) {
         loadingDiv.id = 'loading-indicator';
         loadingDiv.innerHTML = `
             <div class="typing-dots">
-                <span></span>
-                <span></span>
-                <span></span>
+                <span></span><span></span><span></span>
             </div>
             <p>Агент анализирует...</p>
         `;
