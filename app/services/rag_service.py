@@ -43,7 +43,7 @@ class RAGService:
         Returns:
             list[dict]: text, source, section, score
         """
-        k = top_k or Config.RETRIEVAL_K
+        k = top_k or Config.TOP_K_RESULTS
         # Берём больше, чтобы после фильтрации осталось достаточно
         fetch_k = k * 3 if skin_type else k
         results = self._vs.similarity_search_with_score(query, k=fetch_k)

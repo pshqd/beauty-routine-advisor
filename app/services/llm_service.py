@@ -1,6 +1,7 @@
 import requests
 from datetime import datetime
 from typing import Dict, List, Any
+from services.rag_service import RAGService
 
 from config import Config
 from utils.logger import setup_logger
@@ -21,6 +22,7 @@ class LLMService:
         self.url = Config.LM_STUDIO_URL
         self.model = Config.LM_STUDIO_MODEL
         self.generation_config = Config.GENERATION_CONFIG
+        self._rag = RAGService()
 
         logger.info(f"LLMService инициализирован: {self.url}")
 
@@ -48,8 +50,7 @@ class LLMService:
             TimeoutError: Если превышен таймаут
         """
         try:
-            # TODO (Неделя 2): Заменить на RAGService.search(user_message)
-            raw_chunks = self._get_context_stub(user_message)
+            raw_chunks = self._rag.search(user_message)
 
             # Форматируем источники в структурированные объекты
             sources = self._format_sources(raw_chunks)

@@ -47,7 +47,8 @@ class Config:
     KNOWLEDGE_BASE_PATH = BASE_DIR / "knowledge_base"
     EMBEDDINGS_DB_PATH = BASE_DIR / "embeddings_db"
     EMBEDDING_MODEL = "ai-forever/FRIDA"
-    TOP_K_RESULTS = 3  # Количество релевантных секций из RAG
+    TOP_K_RESULTS = 3
+    
     COLLECTION_KB = "skincare_kb"
     FAISS_INDEX_PATH = BASE_DIR / "embeddings_db"
     # ===== ЛОГИРОВАНИЕ =====
