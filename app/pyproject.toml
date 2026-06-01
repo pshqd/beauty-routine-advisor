@@ -21,6 +21,10 @@ dependencies = [
     "python-dotenv>=0.9.9",
     "sentence-transformers>=5.4.1",
     "langchain-gigachat>=0.5.0",
+    "ipykernel>=7.2.0",
+    "pandas>=3.0.3",
+    "seaborn>=0.13.2",
+    "matplotlib>=3.10.9",
 ]
 
 [project.optional-dependencies]
@@ -51,3 +55,8 @@ target-version = ['py311']
 testpaths = ["tests"]
 python_files = ["test_*.py"]
 pythonpath = ["."]   
+
+[dependency-groups]
+dev = [
+    "ipykernel>=7.2.0",
+]
