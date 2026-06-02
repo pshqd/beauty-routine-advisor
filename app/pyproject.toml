@@ -25,6 +25,7 @@ dependencies = [
     "pandas>=3.0.3",
     "seaborn>=0.13.2",
     "matplotlib>=3.10.9",
+    "langchain-faiss>=0.1.1",
 ]
 
 [project.optional-dependencies]

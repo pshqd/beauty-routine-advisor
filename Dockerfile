@@ -12,7 +12,7 @@ RUN pip install --no-cache-dir \
 
 # Слой 3: langchain-стек
 RUN pip install --no-cache-dir \
-        langchain-community \
+        langchain-faiss \
         langchain-gigachat \
         langchain-text-splitters \
         faiss-cpu

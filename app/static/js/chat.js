@@ -1,174 +1,207 @@
+// ============================================================
+// chat.js — SkinCare Advisor Frontend
+// ============================================================
+
 let conversationHistory = [];
 const messagesContainer = document.getElementById("messages");
 const userInput = document.getElementById("user-input");
 const sendButton = document.getElementById("send-button");
 
+// ── Инициализация ───────────────────────────────────────────
 document.addEventListener("DOMContentLoaded", () => {
-  addMessage(
-    "Привет! Я AI-консультант по уходу за кожей. Расскажите о ваших проблемах или типе кожи.",
-    "assistant",
-  );
+    addMessage(
+        "Привет! 👋 Я AI-консультант по уходу за кожей. Расскажите о ваших проблемах или типе кожи.",
+        "assistant"
+    );
 
-  userInput.addEventListener("keypress", (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  });
-});
-
-async function sendMessage() {
-  const message = userInput.value.trim();
-  if (!message) return;
-
-  const welcomeMsg = document.querySelector(".welcome-message");
-  if (welcomeMsg) welcomeMsg.remove();
-
-  addMessage(message, "user");
-  userInput.value = "";
-  setLoading(true);
-
-  try {
-    const response = await fetch("/api/chat", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        message: message,
-        conversation_history: conversationHistory,
-      }),
+    userInput.addEventListener("keypress", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
     });
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+    // Автоматически растягивать textarea при наборе
+    userInput.addEventListener("input", () => {
+        userInput.style.height = "auto";
+        userInput.style.height = Math.min(userInput.scrollHeight, 160) + "px";
+    });
+});
+
+// ── Отправка сообщения ──────────────────────────────────────
+async function sendMessage() {
+    const message = userInput.value.trim();
+    if (!message) return;
+
+    // Убираем welcome-заглушку если есть
+    const welcomeMsg = document.querySelector(".welcome-message");
+    if (welcomeMsg) welcomeMsg.remove();
+
+    addMessage(message, "user");
+    userInput.value = "";
+    userInput.style.height = "auto";
+    setLoading(true);
+
+    try {
+        const response = await fetch("/api/chat", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                message,
+                conversation_history: conversationHistory,
+            }),
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.response) {
+            throw new Error("Empty response from server");
+        }
+
+        addMessage(data.response, "assistant", data.sources || []);
+
+        conversationHistory.push(
+            { role: "user",      content: message       },
+            { role: "assistant", content: data.response }
+        );
+
+    } catch (error) {
+        console.error("sendMessage error:", error);
+        addMessage(
+            "❌ Ошибка соединения. Проверьте, что backend запущен.",
+            "system"
+        );
+    } finally {
+        setLoading(false);
     }
-
-    const data = await response.json();
-
-    // Рендерим ответ вместе с источниками
-    addMessage(data.response, "assistant", data.sources || []);
-
-    conversationHistory.push(
-      { role: "user", content: message },
-      { role: "assistant", content: data.response },
-    );
-  } catch (error) {
-    console.error("Error:", error);
-    addMessage(
-      "Ошибка. Проверьте, что backend и LM Studio запущены.",
-      "system",
-    );
-  } finally {
-    setLoading(false);
-  }
 }
 
+// ── Добавление сообщения в чат ──────────────────────────────
 /**
- * Добавляет сообщение в чат.
- * @param {string} text    - Текст сообщения
- * @param {string} role    - 'user' | 'assistant' | 'system'
- * @param {Array}  sources - Массив объектов источников (только для assistant)
+ * @param {string} text    — текст / markdown
+ * @param {string} role    — 'user' | 'assistant' | 'system'
+ * @param {Array}  sources — источники из RAG (только для assistant)
  */
 function addMessage(text, role, sources = []) {
-  const wrapper = document.createElement("div");
-  wrapper.className = `message-wrapper ${role}`;
+    const wrapper = document.createElement("div");
+    wrapper.className = `message-wrapper ${role}`;
 
-  // Пузырь с текстом
-  const messageDiv = document.createElement("div");
-  messageDiv.className = `message ${role}${role === "assistant" ? " message-content markdown-body" : ""}`;
-  messageDiv.textContent = text;
-  wrapper.appendChild(messageDiv);
+    const bubble = document.createElement("div");
+    bubble.className = `message ${role}`;
 
-  // Источники — только для assistant и только если есть
-  if (role === "assistant" && sources.length > 0) {
-    wrapper.appendChild(renderSources(sources));
-  }
+    if (role === "assistant") {
+        // Рендерим markdown, оборачиваем в .markdown-body для стилей
+        bubble.classList.add("message-content", "markdown-body");
+        bubble.innerHTML = window.renderMarkdown(text);
 
-  messagesContainer.appendChild(wrapper);
-  messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        // Открывать внешние ссылки в новой вкладке
+        bubble.querySelectorAll("a").forEach((a) => {
+            a.setAttribute("target", "_blank");
+            a.setAttribute("rel", "noopener noreferrer");
+        });
+    } else if (role === "system") {
+        bubble.textContent = text;
+    } else {
+        // user — plain text, экранируем XSS
+        bubble.textContent = text;
+    }
+
+    wrapper.appendChild(bubble);
+
+    // Источники RAG — только для assistant
+    if (role === "assistant" && sources.length > 0) {
+        wrapper.appendChild(renderSources(sources));
+    }
+
+    messagesContainer.appendChild(wrapper);
+    messagesContainer.scrollTop = messagesContainer.scrollHeight;
 }
 
+// ── Блок источников RAG ─────────────────────────────────────
 /**
- * Строит блок источников в виде раскрывающихся карточек-статей.
- * @param {Array} sources
+ * @param {Array} sources — [{title, file, preview, score}]
  * @returns {HTMLElement}
  */
 function renderSources(sources) {
-  const block = document.createElement("div");
-  block.className = "sources-block";
+    const block = document.createElement("div");
+    block.className = "sources-block";
 
-  const label = document.createElement("p");
-  label.className = "sources-label";
-  label.textContent = "📚 Источники из базы знаний";
-  block.appendChild(label);
+    const label = document.createElement("p");
+    label.className = "sources-label";
+    label.textContent = "📚 Источники из базы знаний";
+    block.appendChild(label);
 
-  sources.forEach((src) => {
-    const card = document.createElement("details");
-    card.className = "source-card";
+    sources.forEach((src) => {
+        const card = document.createElement("details");
+        card.className = "source-card";
 
-    const summary = document.createElement("summary");
-    summary.className = "source-summary";
-    summary.innerHTML = `
-            <span class="source-icon">📄</span>
-            <span class="source-title">${escapeHtml(src.title)}</span>
-            ${
-              src.score > 0
+        const summary = document.createElement("summary");
+        summary.className = "source-summary";
+        summary.innerHTML = [
+            `<span class="source-icon">📄</span>`,
+            `<span class="source-title">${escapeHtml(src.title || "Без названия")}</span>`,
+            src.score > 0
                 ? `<span class="source-score">${Math.round(src.score * 100)}%</span>`
-                : ""
-            }
-        `;
-    card.appendChild(summary);
+                : "",
+        ].join("");
+        card.appendChild(summary);
 
-    const body = document.createElement("div");
-    body.className = "source-body";
+        const body = document.createElement("div");
+        body.className = "source-body";
 
-    if (src.preview) {
-      const preview = document.createElement("p");
-      preview.className = "source-preview";
-      preview.innerHTML = window.renderMarkdown(src.preview);
-      body.appendChild(preview);
-    }
+        if (src.preview) {
+            const preview = document.createElement("div");
+            preview.className = "source-preview markdown-body";
+            // preview тоже может содержать markdown
+            preview.innerHTML = window.renderMarkdown(src.preview);
+            body.appendChild(preview);
+        }
 
-    if (src.file) {
-      const file = document.createElement("span");
-      file.className = "source-file";
-      file.textContent = src.file;
-      body.appendChild(file);
-    }
+        if (src.file) {
+            const file = document.createElement("span");
+            file.className = "source-file";
+            file.textContent = `📁 ${src.file}`;
+            body.appendChild(file);
+        }
 
-    card.appendChild(body);
-    block.appendChild(card);
-  });
+        card.appendChild(body);
+        block.appendChild(card);
+    });
 
-  return block;
+    return block;
 }
 
-/** Экранирует HTML-спецсимволы в тексте. */
+// ── Утилиты ─────────────────────────────────────────────────
 function escapeHtml(str) {
-  return String(str)
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;")
-    .replace(/"/g, "&quot;");
+    return String(str)
+        .replace(/&/g,  "&amp;")
+        .replace(/</g,  "&lt;")
+        .replace(/>/g,  "&gt;")
+        .replace(/"/g,  "&quot;")
+        .replace(/'/g,  "&#039;");
 }
 
 function setLoading(isLoading) {
-  sendButton.disabled = isLoading;
-  userInput.disabled = isLoading;
+    sendButton.disabled = isLoading;
+    userInput.disabled  = isLoading;
 
-  if (isLoading) {
-    const loadingDiv = document.createElement("div");
-    loadingDiv.className = "loading";
-    loadingDiv.id = "loading-indicator";
-    loadingDiv.innerHTML = `
+    if (isLoading) {
+        const loader = document.createElement("div");
+        loader.className = "loading";
+        loader.id = "loading-indicator";
+        loader.innerHTML = `
             <div class="typing-dots">
                 <span></span><span></span><span></span>
             </div>
             <p>Агент анализирует...</p>
         `;
-    messagesContainer.appendChild(loadingDiv);
-    messagesContainer.scrollTop = messagesContainer.scrollHeight;
-  } else {
-    const loadingDiv = document.getElementById("loading-indicator");
-    if (loadingDiv) loadingDiv.remove();
-  }
+        messagesContainer.appendChild(loader);
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+    } else {
+        document.getElementById("loading-indicator")?.remove();
+    }
 }

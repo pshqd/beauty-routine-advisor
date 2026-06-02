@@ -4,42 +4,56 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Beauty Routine Advisor</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
     <link
       rel="stylesheet"
-      href="{{ url_for('static', filename='css/style.css') }}"
+      href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.8.1/github-markdown.min.css"
+      crossorigin="anonymous"
     />
+    <style>
+      .message.assistant.message-content.markdown-body {
+        background: transparent;
+        color: inherit;
+        padding: 0;
+        font-size: 15px;
+        line-height: 1.6;
+      }
+      .message.assistant.message-content.markdown-body > *:first-child { margin-top: 0; }
+      .message.assistant.message-content.markdown-body > *:last-child  { margin-bottom: 0; }
+      .markdown-body {
+        color-scheme: light;
+        --color-canvas-default: transparent;
+        --color-fg-default: inherit;
+        --color-border-default: transparent;
+        background-color: transparent !important;
+        color: inherit !important;
+    }
+    </style>
   </head>
   <body>
     <div class="app-container">
-      <!-- Левая панель -->
       <aside class="sidebar">
         <div class="sidebar-header">
           <div class="logo-placeholder"></div>
         </div>
-
         <nav class="sidebar-nav">
           <button class="nav-btn">Beauty</button>
           <button class="nav-btn">Routine</button>
           <button class="nav-btn">Advisor</button>
         </nav>
-
         <div class="sidebar-footer">
           <span class="app-name">Beauty routine advisor</span>
         </div>
       </aside>
 
-      <!-- Основная область -->
       <main class="main-content">
         <div class="chat-wrapper">
-          <!-- Заголовок чата -->
           <header class="chat-header">
             <h2 class="chat-title">Персональный чат</h2>
           </header>
 
-          <!-- Область сообщений -->
           <div class="messages-container" id="messages"></div>
 
-          <!-- Поле ввода -->
           <div class="input-container">
             <input
               type="text"
@@ -48,14 +62,8 @@
               placeholder="Опишите ваш тип кожи и проблемы..."
             />
             <button id="send-button" class="send-btn">
-              <svg
-                width="20"
-                height="20"
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                stroke-width="2"
-              >
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none"
+                   stroke="currentColor" stroke-width="2">
                 <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z" />
               </svg>
             </button>
@@ -64,6 +72,19 @@
       </main>
     </div>
 
+    <!-- 1. marked.js -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/lib/marked.umd.js"></script>
+    <!-- 2. DOMPurify -->
+    <script src="https://cdn.jsdelivr.net/npm/dompurify@3.2.6/dist/purify.min.js"></script>
+    <!-- 3. Инициализация renderMarkdown -->
+    <script>
+        marked.setOptions({ breaks: true, gfm: true });
+        window.renderMarkdown = function(text) {
+            const raw = marked.parse(String(text || ""));
+            return DOMPurify.sanitize(raw, { USE_PROFILES: { html: true } });
+        };
+    </script>
+    <!-- 4. chat.js — ПОСЛЕДНИМ -->
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
   </body>
 </html>

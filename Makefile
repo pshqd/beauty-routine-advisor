@@ -44,7 +44,7 @@ run:
 	FLASK_APP=app.py \
 	FLASK_ENV=development \
 	FLASK_DEBUG=1 \
-	$(UV) run flask run --reload --host=0.0.0.0 --port=8000
+	$(UV) run flask run --reload --host=0.0.0.0 --port=8800
 
 .PHONY: test
 test:
