@@ -1,0 +1,4 @@
+Retriever,Hit@1,Hit@3,MRR@3,Latency ms,ΔMRR@3 vs TF-IDF
+TF-IDF (Baseline A),0.75,0.917,0.819,0.6,0.0
+BM25 (Baseline B),0.583,0.75,0.667,0.2,-0.152
+FAISS + USER-base,0.917,1.0,0.958,23.1,0.139
