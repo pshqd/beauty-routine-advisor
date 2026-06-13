@@ -1379,6 +1379,15 @@ wheels = [
 ]
 
 [[package]]
+name = "langchain-faiss"
+version = "0.1.1"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/3b/be/a4afe6fc10b5254da8b18e02c6511493bddd57d49ab9bd3a7efe03b9192d/langchain_faiss-0.1.1.tar.gz", hash = "sha256:8da35aa0fc5a500eb38832ef770d626c167a8fcaf5540bc02ace11214ec1bf37", size = 635, upload-time = "2024-10-18T16:11:07.761Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/4b/c3/be79a6ecbeb9344a245b85e2e82165cc40550e78927bd3d5a5e037a917f6/langchain_faiss-0.1.1-py3-none-any.whl", hash = "sha256:e416663ba3bd575f233c6c99b1b3fd1c15e43cf21b2523e01d4528f9fa28f764", size = 1091, upload-time = "2024-10-18T16:11:06.617Z" },
+]
+
+[[package]]
 name = "langchain-gigachat"
 version = "0.5.0"
 source = { registry = "https://pypi.org/simple" }
@@ -3157,6 +3166,7 @@ dependencies = [
     { name = "flask-cors" },
     { name = "ipykernel" },
     { name = "langchain-community" },
+    { name = "langchain-faiss" },
     { name = "langchain-gigachat" },
     { name = "langchain-huggingface" },
     { name = "langchain-text-splitters" },
@@ -3194,6 +3204,7 @@ requires-dist = [
     { name = "flask-cors", specifier = ">=4.0.0" },
     { name = "ipykernel", specifier = ">=7.2.0" },
     { name = "langchain-community", specifier = ">=0.2" },
+    { name = "langchain-faiss", specifier = ">=0.1.1" },
     { name = "langchain-gigachat", specifier = ">=0.5.0" },
     { name = "langchain-huggingface", specifier = ">=0.1" },
     { name = "langchain-text-splitters", specifier = ">=0.2" },
