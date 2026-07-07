@@ -1,7 +1,5 @@
-"""
-Вспомогательные утилиты.
-"""
+from utils.logger import setup_logger, RequestLogger
+from utils.metrics import metrics
+from utils.rag_metrics import evaluate_retrieval
 
-from .logger import setup_logger
-
-__all__ = ["setup_logger"]
+__all__ = ["setup_logger", "RequestLogger", "metrics", "evaluate_retrieval"]
