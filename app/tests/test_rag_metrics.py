@@ -7,7 +7,7 @@ RAG метрики проверяются на синтетических при
 
 import math
 import pytest
-from utils.rag_metrics import (
+from docs.rag_metrics import (
     precision_at_k,
     recall_at_k,
     reciprocal_rank,

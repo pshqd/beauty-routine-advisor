@@ -43,19 +43,11 @@ def precision_at_k(retrieved: Sequence[str], relevant: Set[str], k: int) -> floa
     return hits / k
 
 
-def recall_at_k(retrieved: Sequence[str], relevant: Set[str], k: int) -> float:
-    """
-    Recall@K = |retrieved[:k] ∩ relevant| / |relevant|
-
-    Returns:
-        float в [0, 1]. 0.0 если relevant пустой.
-    """
+def recall_at_k(retrieved, relevant, k):
     if not relevant:
         return 0.0
-    top_k = retrieved[:k]
-    hits = sum(1 for doc in top_k if doc in relevant)
-    return hits / len(relevant)
-
+    top_k_unique = set(retrieved[:k])
+    return len(top_k_unique & relevant) / len(relevant)
 
 def reciprocal_rank(retrieved: Sequence[str], relevant: Set[str]) -> float:
     """
