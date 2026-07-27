@@ -1,235 +1,224 @@
-import requests
+"""
+LLMService — основной сервис генерации ответов.
+
+Логика:
+  1. Если тема скиновая, но тип кожи не известен → задаём уточняющий вопрос (RAG не вызываем)
+  2. Если тип известен → ищём через RAG и генерируем ответ
+  3. Нескиновая тема → RAG + ответ (без уточнения)
+"""
+
+import re
 from datetime import datetime
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 
 from config import Config
 from utils.logger import setup_logger
+from services.rag_service import RAGService
+from services.providers import get_provider
 
 logger = setup_logger(__name__)
+
+# ===== ПАТТЕРНЫ =====
+
+# Ключевые слова для определения скиновых тем
+_SKIN_TOPIC_KEYWORDS = [
+    r"кож", r"крем", r"уход", r"увлажн", r"очищ", r"тоник",
+    r"серум", r"спф", r"spf", r"акне", r"прыщ", r"морщ", r"высып",
+    r"пигмент", r"ретинол", r"ниацин", r"гиалурон", r"пелинг",
+    r"сух", r"жир", r"комбин", r"нормаль", r"чувств",
+    r"дерматол", r"косметол", r"бьют",
+]
+SKIN_TOPIC_PATTERNS = re.compile(
+    "|".join(_SKIN_TOPIC_KEYWORDS), re.IGNORECASE
+)
+
+# Типы кожи — ключ для FAISS-фильтрации и уточнений
+SKIN_TYPE_MAP = {
+    "жирная":        "жирная",
+    "жирной":        "жирная",
+    "жирную":        "жирная",
+    "сухая":          "сухая",
+    "сухой":          "сухая",
+    "сухую":          "сухая",
+    "комбинированная": "комбинированная",
+    "комбинированной": "комбинированная",
+    "нормальная":     "нормальная",
+    "нормальной":     "нормальная",
+    "чувствительная": "чувствительная",
+    "чувствительной": "чувствительная",
+    "проблемная":    "проблемная",
+    "проблемной":    "проблемная",
+}
+SKIN_TYPE_PATTERNS = re.compile(
+    r"\b(" + "|".join(re.escape(k) for k in SKIN_TYPE_MAP) + r")\b",
+    re.IGNORECASE,
+)
 
 
 class LLMService:
     """
-    Сервис для генерации ответов через LM Studio.
+    Сервис генерации ответов через LLM + RAG.
 
-    На Неделе 1: Базовая интеграция без RAG
-    На Неделе 2: Добавится интеграция с RAGService
+    Интегрирует RAGService (поиск по FAISS-индексу) и
+    провайдер LLM (GigaChat / OpenRouter / LM Studio).
     """
 
     def __init__(self):
-        """Инициализация сервиса."""
-        self.url = Config.LM_STUDIO_URL
-        self.model = Config.LM_STUDIO_MODEL
-        self.generation_config = Config.GENERATION_CONFIG
+        self._rag = RAGService()
+        self._provider = get_provider()
+        logger.info(f"LLMService: provider={type(self._provider).__name__}")
 
-        logger.info(f"LLMService инициализирован: {self.url}")
+    # ================================================================ #
+    # ПУБЛИЧНЫЕ МЕТОДЫ
+    # ================================================================ #
 
     def generate_response(
         self,
         user_message: str,
-        conversation_history: List[Dict[str, str]] = None
+        conversation_history: List[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """
-        Генерирует ответ от LLM на основе сообщения пользователя.
-
-        Args:
-            user_message (str): Сообщение пользователя
-            conversation_history (list): История диалога
+        Генерирует ответ LLM с RAG-контекстом.
 
         Returns:
-            dict: {
-                "response": str,
-                "sources": list[dict],
-                "timestamp": str
-            }
-
-        Raises:
-            ConnectionError: Если LM Studio недоступен
-            TimeoutError: Если превышен таймаут
+            {"response": str, "sources": list, "timestamp": str}
         """
-        try:
-            # TODO (Неделя 2): Заменить на RAGService.search(user_message)
-            raw_chunks = self._get_context_stub(user_message)
+        history = conversation_history or []
 
-            # Форматируем источники в структурированные объекты
-            sources = self._format_sources(raw_chunks)
-
-            # Собираем текстовый контекст для промпта
-            context = "\n\n".join(c["text"] for c in raw_chunks) if raw_chunks else ""
-
-            # Формируем промпт
-            system_prompt = self._create_system_prompt(context)
-
-            # Подготовка сообщений
-            messages = [{"role": "system", "content": system_prompt}]
-
-            if conversation_history:
-                messages.extend(conversation_history)
-
-            messages.append({"role": "user", "content": user_message})
-
-            # Запрос в LM Studio
-            logger.info("🤖 Отправка запроса в LM Studio...")
-            llm_response = self._call_lm_studio(messages)
-
-            logger.info(f"✅ Получен ответ: {llm_response[:50]}...")
-
-            return {
-                "response": llm_response,
-                "sources": sources,
-                "timestamp": datetime.now().isoformat()
-            }
-
-        except requests.exceptions.ConnectionError:
-            logger.error("❌ LM Studio недоступен")
-            raise ConnectionError(
-                "LM Studio is not running. Start Local Server on port 1234."
-            )
-
-        except requests.exceptions.Timeout:
-            logger.error("⏱️ Таймаут запроса к LM Studio")
-            raise TimeoutError("Request to LM Studio timed out.")
-
-        except Exception as e:
-            logger.error(f"💥 Ошибка в LLMService: {str(e)}")
-            raise
-
-    def _format_sources(self, chunks: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
-        """
-        Преобразует сырые чанки из RAG в структурированные объекты источников.
-        Дедуплицирует по (source, section).
-
-        Args:
-            chunks (list): Список чанков вида {text, source, section, score}
-
-        Returns:
-            list[dict]: [
-                {
-                    "title": str,   — заголовок секции или имя файла
-                    "file": str,    — относительный путь к файлу в БЗ
-                    "preview": str, — первые ~200 символов текста чанка
-                    "score": float  — релевантность 0..1
-                },
-                ...
+        # 1. Определяем: нужно ли уточнять тип кожи
+        if self._is_skin_topic(user_message) and self._needs_clarification(history, user_message):
+            clarification_system = self._create_clarification_prompt()
+            messages = [
+                {"role": "system", "content": clarification_system},
+                *history,
+                {"role": "user", "content": user_message},
             ]
-        """
-        seen = set()
-        sources = []
+            response_text = self._provider.complete(messages)
+            return {
+                "response": response_text,
+                "sources": [],
+                "timestamp": datetime.now().isoformat(),
+            }
 
+        # 2. Извлекаем тип кожи из истории/сообщения для FAISS-фильтра
+        skin_type = self._extract_skin_type(history, user_message)
+
+        # 3. RAG-поиск
+        chunks = self._rag.search(user_message, skin_type=skin_type)
+        sources = self._format_sources(chunks)
+        context = self._format_context(chunks)
+
+        # 4. Генерация
+        system_prompt = self._create_system_prompt(context)
+        messages = [
+            {"role": "system", "content": system_prompt},
+            *history,
+            {"role": "user", "content": user_message},
+        ]
+        response_text = self._provider.complete(messages)
+
+        logger.info(f"✓ Ответ сгенерирован, чанков: {len(chunks)}, skin_type: {skin_type}")
+
+        return {
+            "response": response_text,
+            "sources": sources,
+            "timestamp": datetime.now().isoformat(),
+        }
+
+    # ================================================================ #
+    # ВСПОМОГАТЕЛЬНЫЕ МЕТОДЫ
+    # ================================================================ #
+
+    def _is_skin_topic(self, message: str) -> bool:
+        """
+        True если сообщение относится к уходу за кожей.
+        """
+        return bool(SKIN_TOPIC_PATTERNS.search(message))
+
+    def _needs_clarification(
+        self,
+        history: List[Dict[str, str]],
+        user_message: str,
+    ) -> bool:
+        """
+        True если тип кожи не упомянут нигде в диалоге.
+        """
+        all_text = " ".join(
+            m.get("content", "") for m in history
+        ) + " " + user_message
+        return not bool(SKIN_TYPE_PATTERNS.search(all_text))
+
+    def _extract_skin_type(
+        self,
+        history: List[Dict[str, str]],
+        user_message: str,
+    ) -> Optional[str]:
+        """
+        Извлекает нормализованный тип кожи из истории + текущего сообщения.
+        """
+        all_text = " ".join(
+            m.get("content", "") for m in history
+        ) + " " + user_message
+        match = SKIN_TYPE_PATTERNS.search(all_text)
+        if not match:
+            return None
+        return SKIN_TYPE_MAP.get(match.group(0).lower())
+
+    def _format_context(self, chunks: List[Dict[str, Any]]) -> str:
+        """
+        Форматирует чанки в нумерованный текстовый блок для промпта.
+        """
+        if not chunks:
+            return "База знаний не содержит релевантных разделов."
+        lines = []
+        for i, chunk in enumerate(chunks, start=1):
+            source = chunk.get("source", "")
+            section = chunk.get("section", "")
+            text = chunk.get("text", "")
+            header = f"[{i}] {source}" + (f" — {section}" if section else "")
+            lines.append(f"{header}\n{text}")
+        return "\n\n".join(lines)
+
+    def _format_sources(self, chunks: List[Dict[str, Any]]) -> List[str]:
+        """
+        Дедуплицирует чанки и возвращает список уникальных строк-источников.
+        """
+        seen: set = set()
+        sources: List[str] = []
         for chunk in chunks:
             source = chunk.get("source", "")
             section = chunk.get("section", "")
             key = (source, section)
-
             if key in seen:
                 continue
             seen.add(key)
-
-            title = section if section else source
-            preview_text = chunk.get("text", "")
-            preview = (preview_text[:200] + "...") if len(preview_text) > 200 else preview_text
-
-            sources.append({
-                "title": title,
-                "file": source,
-                "preview": preview,
-                "score": round(chunk.get("score", 0.0), 2)
-            })
-
+            label = source + (f" ({section})" if section else "")
+            sources.append(label)
         return sources
 
-    def _call_lm_studio(self, messages: List[Dict[str, str]]) -> str:
+    def _create_clarification_prompt(self) -> str:
         """
-        Отправляет запрос в LM Studio API.
-
-        Args:
-            messages (list): Список сообщений
-
-        Returns:
-            str: Ответ от LLM
+        Системный промпт для уточнения типа кожи у пользователя.
         """
-        payload = {
-            "model": self.model,
-            "messages": messages,
-            "temperature": self.generation_config["temperature"],
-            "max_tokens": self.generation_config["max_tokens"],
-            "top_p": self.generation_config["top_p"],
-            "stream": False
-        }
-
-        response = requests.post(
-            self.url,
-            json=payload,
-            timeout=self.generation_config["timeout"]
+        return (
+            "Ты — эксперт по уходу за кожей. "
+            "Чтобы дать персонализированный совет, задай один уточняющий вопрос: "
+            "какой у пользователя тип кожи? "
+            "(жирная, сухая, комбинированная, нормальная, чувствительная или проблемная)."
         )
-
-        response.raise_for_status()
-        data = response.json()
-
-        return data['choices'][0]['message']['content']
-
-    def _get_context_stub(self, query: str = "") -> List[Dict[str, Any]]:
-        """
-        Временная заглушка: возвращает чанки в формате, совместимом
-        с будущим RAGService.search().
-
-        TODO (Неделя 2): Заменить на RAGService.search(query)
-
-        Args:
-            query (str): Запрос пользователя (пока не используется)
-
-        Returns:
-            list[dict]: Список чанков с полями text/source/section/score
-        """
-        return [
-            {
-                "text": (
-                    "Основные правила ухода за кожей:\n"
-                    "1. Очищение 2 раза в день\n"
-                    "2. Увлажнение обязательно\n"
-                    "3. SPF защита каждый день\n"
-                    "4. Подбор средств по типу кожи\n"
-                    "Типы кожи: жирная, сухая, комбинированная, нормальная"
-                ),
-                "source": "skincare_kb/06_procedures_and_techniques/01_daily_skincare_rituals.md",
-                "section": "Базовые правила ухода",
-                "score": 0.91
-            }
-        ]
 
     def _create_system_prompt(self, context: str) -> str:
         """
-        Создает системный промпт для LLM.
-
-        Args:
-            context (str): Контекст из базы знаний
-
-        Returns:
-            str: Системный промпт
+        Системный промпт для генерации ответа на основе RAG-контекста.
         """
-        return f"""Ты — эксперт-дерматолог и консультант по уходу за кожей.
+        return f"""Ты — дружелюбный эксперт по уходу за кожей и косметологии.
 
 ЗАДАЧА:
-
-1. Если информации недостаточно — задай уточняющие вопросы:
-   - Тип кожи (жирная, сухая, комбинированная, нормальная)
-   - Основные проблемы (акне, морщины, пигментация)
-   - Возраст
-   - Текущий уход (если есть)
-
-2. Когда информации достаточно — дай структурированные советы:
-   ✅ Пошаговая рутина (утро/вечер)
-   ✅ Рекомендуемые ингредиенты
-   ✅ Что избегать
-   ✅ Дополнительные советы
-
-СТИЛЬ:
-- Дружелюбный тон
-- Эмодзи умеренно (1-2 на сообщение)
-- Конкретные советы
+- Давай персонализированные советы по уходу за кожей
+- Базируйся на БАЗУ ЗНАНИЙ ниже
+- Не используй HTML в ответе
 - Если не уверен — советуй обратиться к дерматологу
 
 БАЗА ЗНАНИЙ:
 {context}
-
-Базируй советы на этой информации!"""
+"""

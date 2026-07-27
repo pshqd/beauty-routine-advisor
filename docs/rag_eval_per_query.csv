@@ -1,0 +1,30 @@
+query,skin_type,relevant_sources,retrieved_sources,retrieved_scores,precision@3,recall@3,mrr,hit_rate@3,ndcg@3,mean_score
+уход для сухой кожи,сухая,['01_dry_skin.md'],"['01_dry_skin.md', '01_dry_skin.md', '02_curly_girl_method.md']","[0.122, -0.206, -0.235]",0.6667,1.0,1.0,1.0,1.6309,-0.1063
+крем для сухой и стянутой кожи,сухая,['01_dry_skin.md'],['01_dry_skin.md'],[-0.212],0.3333,1.0,1.0,1.0,1.0,-0.212
+что делать если кожа сухая после умывания,сухая,"['01_dry_skin.md', '01_cleansing.md']","['01_dry_skin.md', '01_dry_skin.md', '01_dry_skin.md']","[-0.017, -0.07, -0.078]",1.0,0.5,1.0,1.0,1.3066,-0.055
+что делать при жирной коже,жирная,['02_oily_skin.md'],"['02_oily_skin.md', '02_oily_skin.md', '02_oily_skin.md']","[0.084, 0.026, -0.048]",1.0,1.0,1.0,1.0,2.1309,0.0207
+уход за жирной кожей лица,жирная,['02_oily_skin.md'],"['02_oily_skin.md', '02_oily_skin.md', '02_oily_skin.md']","[0.101, 0.05, -0.151]",1.0,1.0,1.0,1.0,2.1309,0.0
+как уменьшить жирный блеск кожи,жирная,['02_oily_skin.md'],"['02_oily_skin.md', '02_oily_skin.md', '02_oily_skin.md']","[-0.031, -0.067, -0.096]",1.0,1.0,1.0,1.0,2.1309,-0.0647
+комбинированная кожа как подобрать уход,комбинированная,['03_combination_skin.md'],"['03_combination_skin.md', '02_curly_girl_method.md', '03_combination_skin.md']","[0.122, -0.149, -0.18]",0.6667,1.0,1.0,1.0,1.5,-0.069
+базовый ежедневный уход за лицом,all,['01_daily_skincare_rituals.md'],"['01_daily_skincare_rituals.md', '04_sensitive_skin.md', '01_daily_skincare_rituals.md']","[0.141, 0.093, 0.061]",0.6667,1.0,1.0,1.0,1.5,0.0983
+утренний и вечерний уход за кожей,all,['01_daily_skincare_rituals.md'],"['01_daily_skincare_rituals.md', '01_daily_skincare_rituals.md', '04_sensitive_skin.md']","[0.242, 0.239, 0.159]",0.6667,1.0,1.0,1.0,1.6309,0.2133
+какие этапы ежедневного ухода за кожей,all,['01_daily_skincare_rituals.md'],"['01_daily_skincare_rituals.md', '01_cleansing.md', '01_daily_skincare_rituals.md']","[0.19, 0.077, 0.069]",0.6667,1.0,1.0,1.0,1.5,0.112
+как выбрать spf на каждый день,all,['04_spf_protection.md'],"['04_spf_protection.md', '01_daily_skincare_rituals.md', '04_spf_protection.md']","[0.133, -0.094, -0.135]",0.6667,1.0,1.0,1.0,1.5,-0.032
+нужно ли наносить spf зимой,all,"['04_spf_protection.md', '06_winter_skincare.md']","['03_combination_skin.md', '01_dry_skin.md', '04_sensitive_skin.md']","[-0.016, -0.13, -0.193]",0.0,0.0,0.0,0.0,0.0,-0.113
+какой spf использовать каждый день,all,['04_spf_protection.md'],"['04_spf_protection.md', '04_spf_protection.md', '01_daily_skincare_rituals.md']","[0.053, -0.059, -0.084]",0.6667,1.0,1.0,1.0,1.6309,-0.03
+защита кожи от солнца каждый день,all,['04_spf_protection.md'],"['01_daily_skincare_rituals.md', '04_spf_protection.md', '04_sensitive_skin.md']","[0.125, -0.057, -0.088]",0.3333,1.0,0.5,1.0,0.6309,-0.0067
+как правильно очищать кожу лица,all,['01_cleansing.md'],"['01_cleansing.md', '03_combination_skin.md', '01_daily_skincare_rituals.md']","[0.024, 0.004, -0.012]",0.3333,1.0,1.0,1.0,1.0,0.0053
+зачем нужно увлажнение кожи,all,"['01_dry_skin.md', '03_moisturizing.md']","['03_moisturizing.md', '01_cleansing.md', '04_spf_protection.md']","[0.189, 0.041, -0.01]",0.3333,0.5,1.0,1.0,0.6131,0.0733
+что должно быть в базовой рутине ухода,all,['01_daily_skincare_rituals.md'],"['04_sensitive_skin.md', '03_couperose_and_rosacea.md', '01_daily_skincare_rituals.md']","[0.052, -0.127, -0.144]",0.3333,1.0,0.3333,1.0,0.5,-0.073
+как ухаживать за чувствительной кожей,чувствительная,['04_sensitive_skin.md'],['04_sensitive_skin.md'],[0.085],0.3333,1.0,1.0,1.0,1.0,0.085
+что делать если кожа реагирует на косметику,чувствительная,"['03_couperose_and_rosacea.md', '04_sensitive_skin.md']","['04_sensitive_skin.md', '04_sensitive_skin.md']","[-0.096, -0.114]",0.6667,0.5,1.0,1.0,1.0,-0.105
+как подобрать уход если кожа проблемная,проблемная,"['01_acne_and_post_acne.md', '02_oily_skin.md']",[],[],0.0,0.0,0.0,0.0,0.0,0.0
+уход при акне и постакне,проблемная,['01_acne_and_post_acne.md'],[],[],0.0,0.0,0.0,0.0,0.0,0.0
+как избавиться от пигментации,all,['02_pigmentation.md'],"['02_pigmentation.md', '02_pigmentation.md', '02_pigmentation.md']","[-0.137, -0.159, -0.181]",1.0,1.0,1.0,1.0,2.1309,-0.159
+морщины и потеря упругости кожи,all,['04_wrinkles_and_loss_of_firmness.md'],"['04_wrinkles_and_loss_of_firmness.md', '03_body_skin_concerns.md', '03_hydration_and_water_intake.md']","[-0.049, -0.183, -0.26]",0.3333,1.0,1.0,1.0,1.0,-0.164
+расширенные поры и чёрные точки,all,['05_blackheads_and_enlarged_pores.md'],"['05_blackheads_and_enlarged_pores.md', '05_blackheads_and_enlarged_pores.md', '03_aha_bha_acids.md']","[0.35, -0.219, -0.223]",0.6667,1.0,1.0,1.0,1.6309,-0.0307
+ретинол в уходе за кожей,all,['01_retinol_and_derivatives.md'],"['01_retinol_and_derivatives.md', '01_daily_skincare_rituals.md', '01_retinol_and_derivatives.md']","[0.253, 0.203, 0.028]",0.6667,1.0,1.0,1.0,1.5,0.1613
+витамин с для кожи польза,all,['02_vitamin_c.md'],"['02_vitamin_c.md', '02_vitamin_c.md', '02_vitamin_c.md']","[0.137, 0.128, 0.044]",1.0,1.0,1.0,1.0,2.1309,0.103
+ниацинамид для чего нужен,all,['05_niacinamide.md'],"['05_niacinamide.md', '05_niacinamide.md', '05_niacinamide.md']","[0.183, -0.118, -0.178]",1.0,1.0,1.0,1.0,2.1309,-0.0377
+гиалуроновая кислота в косметике,all,['06_hyaluronic_acid.md'],"['06_hyaluronic_acid.md', '02_vitamin_c.md', '03_aha_bha_acids.md']","[0.037, -0.051, -0.078]",0.3333,1.0,1.0,1.0,1.0,-0.0307
+aha bha кислоты для пилинга,all,['03_aha_bha_acids.md'],"['03_aha_bha_acids.md', '03_aha_bha_acids.md', '03_aha_bha_acids.md']","[0.23, 0.213, 0.119]",1.0,1.0,1.0,1.0,2.1309,0.1873
